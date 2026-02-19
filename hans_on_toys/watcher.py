@@ -17,6 +17,7 @@ HOTKEYS = {
     "ctrl+alt+s": "interactive",  # drag-select region
     "ctrl+alt+f": "fullscreen",   # full screen
     "ctrl+alt+r": "repeat",       # repeat last region
+    "ctrl+alt+p": "private",      # drag-select region with PII masking
 }
 
 
@@ -39,9 +40,13 @@ class Watcher:
     """
     System-tray daemon with global hotkeys for screen capture.
 
+    通常キャプチャ:
     - Ctrl+Alt+S : drag to select region, then capture
     - Ctrl+Alt+F : capture full screen
     - Ctrl+Alt+R : re-capture previous region
+
+    プライバシーキャプチャ（個人情報マスク）:
+    - Ctrl+Alt+P : drag to select region → mask PII → copy
     """
 
     def __init__(self) -> None:
@@ -90,6 +95,53 @@ class Watcher:
         except Exception as exc:
             print(f"[error] {exc}")
 
+    def _do_capture_private(self) -> None:
+        """Ctrl+Alt+P: 範囲選択 → PII マスク → クリップボードへコピー。"""
+        try:
+            background = capture_fullscreen()
+            region = RegionSelector(background).select(self._tk_root)
+            if region is None:
+                return
+            x1, y1, x2, y2 = region
+            image = background.crop((x1, y1, x2, y2))
+            self._last_region = region
+            # OCR は時間がかかるので別スレッドで実行し UI をブロックしない
+            self._notify("個人情報をマスク処理中...")
+            threading.Thread(
+                target=self._run_masking,
+                args=(image,),
+                daemon=True,
+            ).start()
+        except Exception as exc:
+            print(f"[error] {exc}")
+
+    def _run_masking(self, image: Image.Image) -> None:
+        """バックグラウンドスレッドで PII マスクを実行する。"""
+        from hans_on_toys import config as cfg
+        from hans_on_toys.masker import mask_pii
+
+        result = mask_pii(image, cfg.load())
+
+        if result.error:
+            first_line = result.error.split("\n")[0]
+            self._notify(f"[エラー] {first_line}")
+            return
+
+        copy_to_clipboard(result.image)
+        if result.count == 0:
+            self._notify("個人情報は検出されませんでした。そのままコピーしました。")
+        else:
+            self._notify(f"個人情報 {result.count} 件をマスクしてコピーしました。")
+
+    # ──────────────────────────────────────────────
+    # Settings
+    # ──────────────────────────────────────────────
+
+    def _open_settings(self) -> None:
+        """設定ダイアログを開く（メインスレッド上で実行）。"""
+        from hans_on_toys.settings_dialog import SettingsDialog
+        SettingsDialog(parent=self._tk_root).show()
+
     # ──────────────────────────────────────────────
     # Utilities
     # ──────────────────────────────────────────────
@@ -128,6 +180,8 @@ class Watcher:
             "interactive": self._do_capture_interactive,
             "fullscreen":  self._do_capture_fullscreen,
             "repeat":      self._do_capture_repeat,
+            "private":     self._do_capture_private,
+            "settings":    self._open_settings,
         }
         try:
             action = self._action_queue.get_nowait()
@@ -160,6 +214,15 @@ class Watcher:
                 lambda: self._enqueue("repeat"),
             ),
             pystray.Menu.SEPARATOR,
+            pystray.MenuItem(
+                "プライバシーキャプチャ  (Ctrl+Alt+P)",
+                lambda: self._enqueue("private"),
+            ),
+            pystray.MenuItem(
+                "設定...",
+                lambda: self._enqueue("settings"),
+            ),
+            pystray.Menu.SEPARATOR,
             pystray.MenuItem("Quit", self._quit),
         )
         self._icon = pystray.Icon("hans-on-toys", _make_icon(), "Hans-on-Toys", menu)
@@ -182,6 +245,7 @@ class Watcher:
         print("  Ctrl+Alt+S  Region capture")
         print("  Ctrl+Alt+F  Full-screen capture")
         print("  Ctrl+Alt+R  Repeat last region")
+        print("  Ctrl+Alt+P  Privacy capture (PII masking)")
         print("To quit: right-click the tray icon -> Quit")
 
         # Persistent hidden Tk root — keeps the Tcl interpreter (and Windows

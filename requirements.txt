@@ -2,3 +2,4 @@ Pillow>=9.0
 mss>=7.0
 keyboard>=0.13.5
 pystray>=0.17.0
+pytesseract>=0.3.10

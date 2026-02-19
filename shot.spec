@@ -9,6 +9,7 @@ a = Analysis(
     hiddenimports=[
         "pystray._win32",       # Windows tray icon backend
         "PIL._tkinter_finder",  # Pillow / tkinter bridge
+        "pytesseract",          # OCR (PII masking)
     ],
     hookspath=[],
     hooksconfig={},
