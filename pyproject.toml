@@ -10,6 +10,8 @@ requires-python = ">=3.9"
 dependencies = [
     "Pillow>=9.0",
     "mss>=7.0",
+    "keyboard>=0.13.5",
+    "pystray>=0.17.0",
 ]
 
 [project.scripts]

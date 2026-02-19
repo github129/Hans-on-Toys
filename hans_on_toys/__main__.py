@@ -35,10 +35,24 @@ def main() -> None:
         epilog="""
 使用例:
   shot                                 画面上でドラッグして範囲を選択
+  shot watch                           ホットキー常駐モードで起動
   shot --region 100 200 900 700        座標を指定して撮影
   shot --output capture.png            クリップボードに加えてファイルにも保存
   shot --region 0 0 1920 1080 -o full.png
+
+ホットキー（watch モード）:
+  Ctrl+Shift+S  範囲を選択してキャプチャ
+  Ctrl+Shift+F  全画面キャプチャ
+  Ctrl+Shift+R  前回の範囲を再キャプチャ
         """,
+    )
+    parser.add_argument(
+        "action",
+        nargs="?",
+        choices=["watch"],
+        metavar="[watch]",
+        default=None,
+        help="watch: ホットキー常駐モードで起動（タスクトレイに常駐）",
     )
     parser.add_argument(
         "--region",
@@ -56,6 +70,12 @@ def main() -> None:
     )
 
     args = parser.parse_args()
+
+    # watch モード
+    if args.action == "watch":
+        from hans_on_toys.watcher import Watcher
+        Watcher().run()
+        return
 
     from hans_on_toys.clipboard import copy_to_clipboard
     from hans_on_toys.screenshot import capture_fullscreen, capture_region
