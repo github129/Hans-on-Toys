@@ -41,9 +41,9 @@ def main() -> None:
   shot --region 0 0 1920 1080 -o full.png
 
 ホットキー（watch モード）:
-  Ctrl+Shift+S  範囲を選択してキャプチャ
-  Ctrl+Shift+F  全画面キャプチャ
-  Ctrl+Shift+R  前回の範囲を再キャプチャ
+  Ctrl+Alt+S  範囲を選択してキャプチャ
+  Ctrl+Alt+F  全画面キャプチャ
+  Ctrl+Alt+R  前回の範囲を再キャプチャ
         """,
     )
     parser.add_argument(

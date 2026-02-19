@@ -11,10 +11,11 @@ from hans_on_toys.screenshot import capture_fullscreen, capture_region
 from hans_on_toys.selector import RegionSelector
 
 # ホットキー定義: {キーの組み合わせ: アクション名}
+# Ctrl+Alt+* を使用。Ctrl+Shift+* はブラウザ（リロード・検索など）と衝突するため避ける。
 HOTKEYS = {
-    "ctrl+shift+s": "interactive",  # 範囲を選択してキャプチャ
-    "ctrl+shift+f": "fullscreen",   # 全画面キャプチャ
-    "ctrl+shift+r": "repeat",       # 前回の範囲を再キャプチャ
+    "ctrl+alt+s": "interactive",  # 範囲を選択してキャプチャ
+    "ctrl+alt+f": "fullscreen",   # 全画面キャプチャ
+    "ctrl+alt+r": "repeat",       # 前回の範囲を再キャプチャ
 }
 
 
@@ -42,9 +43,9 @@ class Watcher:
     """
     タスクトレイに常駐し、グローバルホットキーでスクリーンショットを撮影するウォッチャー。
 
-    - Ctrl+Shift+S : ドラッグで範囲を選択してキャプチャ
-    - Ctrl+Shift+F : 全画面をキャプチャ
-    - Ctrl+Shift+R : 前回と同じ範囲を再キャプチャ
+    - Ctrl+Alt+S : ドラッグで範囲を選択してキャプチャ
+    - Ctrl+Alt+F : 全画面をキャプチャ
+    - Ctrl+Alt+R : 前回と同じ範囲を再キャプチャ
     """
 
     def __init__(self) -> None:
@@ -82,7 +83,7 @@ class Watcher:
     def _do_capture_repeat(self) -> None:
         if self._last_region is None:
             self._notify(
-                "前回の範囲がありません。先に Ctrl+Shift+S で範囲を選択してください。"
+                "前回の範囲がありません。先に Ctrl+Alt+S で範囲を選択してください。"
             )
             return
         try:
@@ -124,15 +125,15 @@ class Watcher:
         """タスクトレイアイコンとメニューを起動する（別スレッドで実行）。"""
         menu = pystray.Menu(
             pystray.MenuItem(
-                "範囲を選択してキャプチャ  (Ctrl+Shift+S)",
+                "範囲を選択してキャプチャ  (Ctrl+Alt+S)",
                 lambda: self._enqueue("interactive"),
             ),
             pystray.MenuItem(
-                "全画面キャプチャ  (Ctrl+Shift+F)",
+                "全画面キャプチャ  (Ctrl+Alt+F)",
                 lambda: self._enqueue("fullscreen"),
             ),
             pystray.MenuItem(
-                "前回の範囲を再キャプチャ  (Ctrl+Shift+R)",
+                "前回の範囲を再キャプチャ  (Ctrl+Alt+R)",
                 lambda: self._enqueue("repeat"),
             ),
             pystray.Menu.SEPARATOR,
@@ -147,17 +148,18 @@ class Watcher:
 
     def run(self) -> None:
         # グローバルホットキーを登録
+        # suppress=True: キー入力をこのツールで消費し、ブラウザ等の他のアプリに伝えない
         for hotkey, action in HOTKEYS.items():
-            keyboard.add_hotkey(hotkey, lambda a=action: self._enqueue(a))
+            keyboard.add_hotkey(hotkey, lambda a=action: self._enqueue(a), suppress=True)
 
         # タスクトレイをバックグラウンドスレッドで起動
         tray_thread = threading.Thread(target=self._run_tray, daemon=True)
         tray_thread.start()
 
         print("Hans-on-Toys が起動しました")
-        print("  Ctrl+Shift+S  範囲を選択してキャプチャ")
-        print("  Ctrl+Shift+F  全画面キャプチャ")
-        print("  Ctrl+Shift+R  前回の範囲を再キャプチャ")
+        print("  Ctrl+Alt+S  範囲を選択してキャプチャ")
+        print("  Ctrl+Alt+F  全画面キャプチャ")
+        print("  Ctrl+Alt+R  前回の範囲を再キャプチャ")
         print("終了: タスクトレイのアイコンを右クリック → 終了")
 
         # メインループ

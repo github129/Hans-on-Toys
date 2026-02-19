@@ -103,8 +103,8 @@ Write-Host "セットアップ完了！" -ForegroundColor Green
 Write-Host "デスクトップの「Hans-on-Toys」をダブルクリックして起動してください。" -ForegroundColor White
 Write-Host ""
 Write-Host "ホットキー:" -ForegroundColor Yellow
-Write-Host "  Ctrl+Shift+S  範囲を選択してキャプチャ"
-Write-Host "  Ctrl+Shift+F  全画面キャプチャ"
-Write-Host "  Ctrl+Shift+R  前回の範囲を再キャプチャ"
+Write-Host "  Ctrl+Alt+S  範囲を選択してキャプチャ"
+Write-Host "  Ctrl+Alt+F  全画面キャプチャ"
+Write-Host "  Ctrl+Alt+R  前回の範囲を再キャプチャ"
 Write-Host ""
 Write-Host "終了: タスクトレイのアイコンを右クリック → 終了"
