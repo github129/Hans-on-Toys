@@ -21,18 +21,24 @@ pip install -e .
 
 ## 使い方
 
-### デスクトップショートカットをセットアップ（初回のみ）
+### 単体 exe にパッケージ化（推奨・Python 不要になる）
 
 ```powershell
-# デスクトップにショートカットを作成
+# 1. exe をビルド（初回のみ・数分かかります）
+.\scripts\build.ps1
+
+# 2. デスクトップショートカットを作成
 .\scripts\setup_shortcut.ps1
 
 # Windows ログイン時に自動起動させる場合
 .\scripts\setup_shortcut.ps1 -AddToStartup
 ```
 
-デスクトップに **「Hans-on-Toys」** アイコンが作成されます。
-ダブルクリックするだけで起動（コンソール画面は表示されません）。
+`dist\shot.exe` が生成され、**Python がインストールされていない PC でも動作**します。
+デスクトップに **「Hans-on-Toys」** アイコンが作成され、ダブルクリックするだけで起動します。
+
+> **Python 環境のままショートカットだけ作る場合**（ビルドしない場合）:
+> `.\scripts\setup_shortcut.ps1` だけ実行してください。`dist\shot.exe` がなければ自動的に Python 経由で起動します。
 
 ---
 

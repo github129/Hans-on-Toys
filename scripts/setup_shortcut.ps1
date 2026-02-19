@@ -22,62 +22,78 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-# ─── Python の場所を確認 ──────────────────────────────────────────────────────
-Write-Host "Python を検索中..." -ForegroundColor Cyan
-
-try {
-    $pyExe = (py -c "import sys; print(sys.executable)").Trim()
-} catch {
-    Write-Error "Python (py コマンド) が見つかりません。Python をインストールして再実行してください。"
-    exit 1
-}
-
-# コンソール非表示で実行できる pythonw.exe を優先する
-$pythonw = $pyExe -replace "python\.exe$", "pythonw.exe"
-if (-not (Test-Path $pythonw)) {
-    Write-Warning "pythonw.exe が見つかりません。python.exe を使用します（起動時にコンソール画面が一瞬表示されます）。"
-    $pythonw = $pyExe
-}
-Write-Host "  使用する Python: $pythonw" -ForegroundColor Gray
-
 # ─── プロジェクトディレクトリ ──────────────────────────────────────────────────
 # このスクリプトは <project>/scripts/ に置かれている前提
 $projectDir = Split-Path -Parent $PSScriptRoot
-Write-Host "  プロジェクト: $projectDir" -ForegroundColor Gray
+Write-Host "プロジェクト: $projectDir" -ForegroundColor Gray
 
-# ─── アイコン生成（hans_on_toys.watcher の _make_icon を流用） ─────────────────
+# ─── 起動コマンドを決定（ビルド済み exe > pythonw > python の優先順） ────────────
+$builtExe = Join-Path $projectDir "dist\shot.exe"
+
+if (Test-Path $builtExe) {
+    # ビルド済みの単体 exe がある場合はそれを使用（Python 不要）
+    $launchTarget = $builtExe
+    $launchArgs   = "watch"
+    Write-Host "起動方法: ビルド済み exe を使用 ($builtExe)" -ForegroundColor Green
+} else {
+    # Python 経由で起動
+    Write-Host "Python を検索中..." -ForegroundColor Cyan
+    try {
+        $pyExe = (py -c "import sys; print(sys.executable)").Trim()
+    } catch {
+        Write-Error "dist\shot.exe が見つからず、Python (py) も見つかりません。`n先に .\scripts\build.ps1 を実行して exe をビルドするか、Python をインストールしてください。"
+        exit 1
+    }
+    # コンソール非表示で実行できる pythonw.exe を優先する
+    $pythonw = $pyExe -replace "python\.exe$", "pythonw.exe"
+    if (-not (Test-Path $pythonw)) {
+        Write-Warning "pythonw.exe が見つかりません。python.exe を使用します（起動時にコンソール画面が一瞬表示されます）。"
+        $pythonw = $pyExe
+    }
+    $launchTarget = $pythonw
+    $launchArgs   = "-m hans_on_toys watch"
+    Write-Host "起動方法: Python を使用 ($pythonw)" -ForegroundColor Yellow
+    Write-Host "  ヒント: .\scripts\build.ps1 で exe をビルドすると Python 不要になります。" -ForegroundColor Gray
+}
+
+# ─── アイコン生成 ─────────────────────────────────────────────────────────────
 Write-Host "アイコンを生成中..." -ForegroundColor Cyan
 
 $iconDir  = Join-Path $env:APPDATA "hans-on-toys"
 $iconPath = Join-Path $iconDir "icon.ico"
 New-Item -ItemType Directory -Force -Path $iconDir | Out-Null
 
-$iconScript = "
+# exe があれば exe から、なければ Python から生成
+if (Test-Path $builtExe) {
+    # ビルド済み exe の場合はアイコン生成をスキップ（exe 自体にアイコンが埋め込まれている）
+    $iconPath = $null
+} else {
+    $iconScript = "
 import sys
 sys.path.insert(0, r'$projectDir')
 from hans_on_toys.watcher import _make_icon
 img = _make_icon().resize((256, 256))
 img.save(r'$iconPath')
 "
-
-try {
-    & $pythonw -c $iconScript
-    Write-Host "  アイコン保存先: $iconPath" -ForegroundColor Gray
-} catch {
-    Write-Warning "アイコン生成に失敗しました。デフォルトアイコンを使用します。"
-    $iconPath = $null
+    try {
+        & $launchTarget -c $iconScript
+        Write-Host "  アイコン保存先: $iconPath" -ForegroundColor Gray
+    } catch {
+        Write-Warning "アイコン生成に失敗しました。デフォルトアイコンを使用します。"
+        $iconPath = $null
+    }
 }
 
 # ─── VBScript ランチャー作成 ──────────────────────────────────────────────────
-# pythonw.exe を直接ショートカットのターゲットにすると VS Code など外部エディタが
+# exe / pythonw.exe を直接ショートカットのターゲットにすると VS Code など外部エディタが
 # 関連付けを奪って開いてしまう場合がある。
-# wscript.exe（Windows 組み込み）経由で .vbs を実行することで確実に Python を起動する。
+# wscript.exe（Windows 組み込み）経由で .vbs を実行することで確実に起動する。
 Write-Host "ランチャースクリプトを作成中..." -ForegroundColor Cyan
 
 $vbsPath = Join-Path $iconDir "launch.vbs"
 $vbsContent = @"
 Set WshShell = CreateObject("WScript.Shell")
-WshShell.Run """$pythonw"" -m hans_on_toys watch", 0, False
+WshShell.Run """$launchTarget"" $launchArgs", 0, False
 "@
 Set-Content -Path $vbsPath -Value $vbsContent -Encoding UTF8
 Write-Host "  ランチャー: $vbsPath" -ForegroundColor Gray
