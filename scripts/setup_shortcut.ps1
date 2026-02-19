@@ -1,19 +1,17 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-    Hans-on-Toys のデスクトップショートカットをセットアップします。
+    Set up a desktop shortcut for Hans-on-Toys.
 
 .DESCRIPTION
-    shot watch をコンソール画面なしで起動するデスクトップショートカットを作成します。
-    -AddToStartup を付けると Windows ログイン時に自動起動します。
+    Creates a desktop shortcut that launches "shot watch" without a console window.
+    Use -AddToStartup to also register it to run at Windows login.
 
 .EXAMPLE
-    # デスクトップショートカットだけ作成
-    .\setup_shortcut.ps1
+    .\scripts\setup_shortcut.ps1
 
 .EXAMPLE
-    # デスクトップショートカット + Windows 起動時に自動起動
-    .\setup_shortcut.ps1 -AddToStartup
+    .\scripts\setup_shortcut.ps1 -AddToStartup
 #>
 param(
     [switch]$AddToStartup
@@ -22,73 +20,66 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
 
-# ─── プロジェクトディレクトリ ──────────────────────────────────────────────────
-# このスクリプトは <project>/scripts/ に置かれている前提
+# This script lives in <project>/scripts/
 $projectDir = Split-Path -Parent $PSScriptRoot
-Write-Host "プロジェクト: $projectDir" -ForegroundColor Gray
+Write-Host "Project: $projectDir" -ForegroundColor Gray
 
-# ─── 起動コマンドを決定（ビルド済み exe > pythonw > python の優先順） ────────────
+# Decide how to launch: built exe > pythonw > python
 $builtExe = Join-Path $projectDir "dist\shot.exe"
 
 if (Test-Path $builtExe) {
-    # ビルド済みの単体 exe がある場合はそれを使用（Python 不要）
     $launchTarget = $builtExe
     $launchArgs   = "watch"
-    Write-Host "起動方法: ビルド済み exe を使用 ($builtExe)" -ForegroundColor Green
+    Write-Host "Launch method: built exe ($builtExe)" -ForegroundColor Green
 } else {
-    # Python 経由で起動
-    Write-Host "Python を検索中..." -ForegroundColor Cyan
+    Write-Host "Locating Python..." -ForegroundColor Cyan
     try {
         $pyExe = (py -c "import sys; print(sys.executable)").Trim()
     } catch {
-        Write-Error "dist\shot.exe が見つからず、Python (py) も見つかりません。`n先に .\scripts\build.ps1 を実行して exe をビルドするか、Python をインストールしてください。"
+        Write-Error "dist\shot.exe not found and Python (py) is not available.`nRun .\scripts\build.ps1 first, or install Python."
         exit 1
     }
-    # コンソール非表示で実行できる pythonw.exe を優先する
     $pythonw = $pyExe -replace "python\.exe$", "pythonw.exe"
     if (-not (Test-Path $pythonw)) {
-        Write-Warning "pythonw.exe が見つかりません。python.exe を使用します（起動時にコンソール画面が一瞬表示されます）。"
+        Write-Warning "pythonw.exe not found; using python.exe (a console window may flash briefly)."
         $pythonw = $pyExe
     }
     $launchTarget = $pythonw
     $launchArgs   = "-m hans_on_toys watch"
-    Write-Host "起動方法: Python を使用 ($pythonw)" -ForegroundColor Yellow
-    Write-Host "  ヒント: .\scripts\build.ps1 で exe をビルドすると Python 不要になります。" -ForegroundColor Gray
+    Write-Host "Launch method: Python ($pythonw)" -ForegroundColor Yellow
+    Write-Host "  Tip: run .\scripts\build.ps1 to create a standalone exe." -ForegroundColor Gray
 }
 
-# ─── アイコン生成 ─────────────────────────────────────────────────────────────
-Write-Host "アイコンを生成中..." -ForegroundColor Cyan
+# Generate icon (skip when using the built exe)
+Write-Host "Generating icon..." -ForegroundColor Cyan
 
 $iconDir  = Join-Path $env:APPDATA "hans-on-toys"
 $iconPath = Join-Path $iconDir "icon.ico"
 New-Item -ItemType Directory -Force -Path $iconDir | Out-Null
 
-# exe があれば exe から、なければ Python から生成
 if (Test-Path $builtExe) {
-    # ビルド済み exe の場合はアイコン生成をスキップ（exe 自体にアイコンが埋め込まれている）
-    $iconPath = $null
+    $iconPath = $null   # icon is embedded in the exe
 } else {
-    $iconScript = "
+    $iconScript = @"
 import sys
 sys.path.insert(0, r'$projectDir')
 from hans_on_toys.watcher import _make_icon
 img = _make_icon().resize((256, 256))
 img.save(r'$iconPath')
-"
+"@
     try {
         & $launchTarget -c $iconScript
-        Write-Host "  アイコン保存先: $iconPath" -ForegroundColor Gray
+        Write-Host "  Icon saved: $iconPath" -ForegroundColor Gray
     } catch {
-        Write-Warning "アイコン生成に失敗しました。デフォルトアイコンを使用します。"
+        Write-Warning "Icon generation failed; using default icon."
         $iconPath = $null
     }
 }
 
-# ─── VBScript ランチャー作成 ──────────────────────────────────────────────────
-# exe / pythonw.exe を直接ショートカットのターゲットにすると VS Code など外部エディタが
-# 関連付けを奪って開いてしまう場合がある。
-# wscript.exe（Windows 組み込み）経由で .vbs を実行することで確実に起動する。
-Write-Host "ランチャースクリプトを作成中..." -ForegroundColor Cyan
+# Create VBScript launcher
+# Using wscript.exe as the shortcut target prevents editors (e.g. VS Code)
+# from hijacking the .exe file association.
+Write-Host "Creating launcher script..." -ForegroundColor Cyan
 
 $vbsPath = Join-Path $iconDir "launch.vbs"
 $vbsContent = @"
@@ -96,46 +87,45 @@ Set WshShell = CreateObject("WScript.Shell")
 WshShell.Run """$launchTarget"" $launchArgs", 0, False
 "@
 Set-Content -Path $vbsPath -Value $vbsContent -Encoding UTF8
-Write-Host "  ランチャー: $vbsPath" -ForegroundColor Gray
+Write-Host "  Launcher: $vbsPath" -ForegroundColor Gray
 
-# ─── デスクトップショートカット作成 ───────────────────────────────────────────
-Write-Host "デスクトップショートカットを作成中..." -ForegroundColor Cyan
+# Create desktop shortcut
+Write-Host "Creating desktop shortcut..." -ForegroundColor Cyan
 
 $desktop  = [Environment]::GetFolderPath("Desktop")
 $lnkPath  = Join-Path $desktop "Hans-on-Toys.lnk"
 
 $wsh      = New-Object -ComObject WScript.Shell
 $shortcut = $wsh.CreateShortcut($lnkPath)
-# ターゲットは wscript.exe（Windows 組み込み）にすることで VS Code への誤関連付けを防ぐ
 $shortcut.TargetPath       = "$env:SystemRoot\System32\wscript.exe"
 $shortcut.Arguments        = """$vbsPath"""
 $shortcut.WorkingDirectory = $projectDir
-$shortcut.Description      = "Hans-on-Toys スクリーンショットツール（ホットキー常駐）"
+$shortcut.Description      = "Hans-on-Toys screenshot tool (hotkey daemon)"
 if ($iconPath -and (Test-Path $iconPath)) {
     $shortcut.IconLocation = "$iconPath,0"
 }
 $shortcut.Save()
 
-Write-Host "  作成しました: $lnkPath" -ForegroundColor Green
+Write-Host "  Created: $lnkPath" -ForegroundColor Green
 
-# ─── スタートアップ登録（オプション） ─────────────────────────────────────────
+# Register to startup (optional)
 if ($AddToStartup) {
-    Write-Host "スタートアップに登録中..." -ForegroundColor Cyan
+    Write-Host "Adding to startup..." -ForegroundColor Cyan
     $startupDir = [Environment]::GetFolderPath("Startup")
     $startupLnk = Join-Path $startupDir "Hans-on-Toys.lnk"
     Copy-Item $lnkPath $startupLnk -Force
-    Write-Host "  登録しました: $startupLnk" -ForegroundColor Green
-    Write-Host "  次回 Windows ログイン時から自動起動します。" -ForegroundColor Gray
+    Write-Host "  Registered: $startupLnk" -ForegroundColor Green
+    Write-Host "  Will auto-start at next Windows login." -ForegroundColor Gray
 }
 
-# ─── 完了メッセージ ────────────────────────────────────────────────────────────
+# Done
 Write-Host ""
-Write-Host "セットアップ完了！" -ForegroundColor Green
-Write-Host "デスクトップの「Hans-on-Toys」をダブルクリックして起動してください。" -ForegroundColor White
+Write-Host "Setup complete!" -ForegroundColor Green
+Write-Host "Double-click 'Hans-on-Toys' on your desktop to launch." -ForegroundColor White
 Write-Host ""
-Write-Host "ホットキー:" -ForegroundColor Yellow
-Write-Host "  Ctrl+Alt+S  範囲を選択してキャプチャ"
-Write-Host "  Ctrl+Alt+F  全画面キャプチャ"
-Write-Host "  Ctrl+Alt+R  前回の範囲を再キャプチャ"
+Write-Host "Hotkeys:" -ForegroundColor Yellow
+Write-Host "  Ctrl+Alt+S  Region capture"
+Write-Host "  Ctrl+Alt+F  Full-screen capture"
+Write-Host "  Ctrl+Alt+R  Re-capture last region"
 Write-Host ""
-Write-Host "終了: タスクトレイのアイコンを右クリック → 終了"
+Write-Host "To quit: right-click the tray icon -> Exit"
