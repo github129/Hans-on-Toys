@@ -34,13 +34,12 @@ def main() -> None:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 使用例:
-  shot                                 画面上でドラッグして範囲を選択
-  shot watch                           ホットキー常駐モードで起動
-  shot --region 100 200 900 700        座標を指定して撮影
-  shot --output capture.png            クリップボードに加えてファイルにも保存
+  shot                                 タスクトレイに常駐して起動（デフォルト）
+  shot watch                           同上（明示的に常駐モードを指定）
+  shot --region 100 200 900 700        座標を指定して1回撮影して終了
   shot --region 0 0 1920 1080 -o full.png
 
-ホットキー（watch モード）:
+ホットキー（常駐中）:
   Ctrl+Alt+S  範囲を選択してキャプチャ
   Ctrl+Alt+F  全画面キャプチャ
   Ctrl+Alt+R  前回の範囲を再キャプチャ
@@ -71,8 +70,8 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    # watch モード
-    if args.action == "watch":
+    # 引数なし起動（exe をダブルクリック等）は常駐モードをデフォルトとする
+    if args.action == "watch" or (args.action is None and args.region is None and args.output is None):
         from hans_on_toys.watcher import Watcher
         Watcher().run()
         return
