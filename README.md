@@ -21,6 +21,21 @@ pip install -e .
 
 ## 使い方
 
+### デスクトップショートカットをセットアップ（初回のみ）
+
+```powershell
+# デスクトップにショートカットを作成
+.\scripts\setup_shortcut.ps1
+
+# Windows ログイン時に自動起動させる場合
+.\scripts\setup_shortcut.ps1 -AddToStartup
+```
+
+デスクトップに **「Hans-on-Toys」** アイコンが作成されます。
+ダブルクリックするだけで起動（コンソール画面は表示されません）。
+
+---
+
 ### ホットキー常駐モード（推奨）
 
 ```bash
