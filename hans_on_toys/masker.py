@@ -110,9 +110,16 @@ def _collect_patterns(masking_cfg: dict) -> list[re.Pattern]:
 
 
 def _run_ocr(pytesseract, image: Image.Image) -> dict:
-    """jpn+eng → eng の順にフォールバックして OCR を実行する。"""
+    """
+    eng（標準インストールで常に利用可能）→ jpn+eng（日本語データがある場合）
+    の順に OCR を試みる。
+
+    PII パターン（メール・電話番号・クレジットカード番号）はすべて ASCII 文字で
+    構成されているため、日本語（jpn）データなしでも正確に検出できる。
+    Tesseract の英語のみのインストールで問題なく動作する。
+    """
     last_exc: Exception | None = None
-    for lang in ("jpn+eng", "eng"):
+    for lang in ("eng", "jpn+eng"):
         try:
             return pytesseract.image_to_data(
                 image,

@@ -120,6 +120,11 @@ class SettingsDialog:
             text="例: C:\\Program Files\\Tesseract-OCR\\tesseract.exe",
             foreground="#666666",
         ).pack(anchor="w", pady=(2, 0))
+        ttk.Label(
+            frame_tess,
+            text="※ 日本語データは不要です。英語のみのインストールで動作します。",
+            foreground="#666666",
+        ).pack(anchor="w")
 
         # ── 保存 / キャンセル ─────────────────────────────────────────────
         btn_row = ttk.Frame(root)
