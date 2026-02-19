@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hans-on-toys"
+version = "0.1.0"
+description = "ハンズオン資料作成用スクリーンショットツール"
+requires-python = ">=3.9"
+dependencies = [
+    "Pillow>=9.0",
+    "mss>=7.0",
+]
+
+[project.scripts]
+shot = "hans_on_toys.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["hans_on_toys*"]
