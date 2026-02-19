@@ -68,6 +68,20 @@ try {
     $iconPath = $null
 }
 
+# ─── VBScript ランチャー作成 ──────────────────────────────────────────────────
+# pythonw.exe を直接ショートカットのターゲットにすると VS Code など外部エディタが
+# 関連付けを奪って開いてしまう場合がある。
+# wscript.exe（Windows 組み込み）経由で .vbs を実行することで確実に Python を起動する。
+Write-Host "ランチャースクリプトを作成中..." -ForegroundColor Cyan
+
+$vbsPath = Join-Path $iconDir "launch.vbs"
+$vbsContent = @"
+Set WshShell = CreateObject("WScript.Shell")
+WshShell.Run """$pythonw"" -m hans_on_toys watch", 0, False
+"@
+Set-Content -Path $vbsPath -Value $vbsContent -Encoding UTF8
+Write-Host "  ランチャー: $vbsPath" -ForegroundColor Gray
+
 # ─── デスクトップショートカット作成 ───────────────────────────────────────────
 Write-Host "デスクトップショートカットを作成中..." -ForegroundColor Cyan
 
@@ -76,8 +90,9 @@ $lnkPath  = Join-Path $desktop "Hans-on-Toys.lnk"
 
 $wsh      = New-Object -ComObject WScript.Shell
 $shortcut = $wsh.CreateShortcut($lnkPath)
-$shortcut.TargetPath       = $pythonw
-$shortcut.Arguments        = "-m hans_on_toys watch"
+# ターゲットは wscript.exe（Windows 組み込み）にすることで VS Code への誤関連付けを防ぐ
+$shortcut.TargetPath       = "$env:SystemRoot\System32\wscript.exe"
+$shortcut.Arguments        = """$vbsPath"""
 $shortcut.WorkingDirectory = $projectDir
 $shortcut.Description      = "Hans-on-Toys スクリーンショットツール（ホットキー常駐）"
 if ($iconPath -and (Test-Path $iconPath)) {
