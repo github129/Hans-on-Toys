@@ -16,7 +16,7 @@ a = Analysis(
         "mss.windows",              # Windows backend
         "pytesseract",              # OCR (PII masking)
     ] + kb_hidden + pst_hidden,
-    hookspath=[],
+    hookspath=["hooks"],
     hooksconfig={},
     runtime_hooks=[],
     excludes=[],
