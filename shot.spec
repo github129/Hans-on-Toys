@@ -13,7 +13,6 @@ a = Analysis(
     datas=kb_datas + pst_datas,
     hiddenimports=[
         "mss",                      # screen capture
-        "mss.windows",              # Windows backend
         "pytesseract",              # OCR (PII masking)
     ] + kb_hidden + pst_hidden,
     hookspath=["hooks"],
