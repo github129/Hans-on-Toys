@@ -7,9 +7,13 @@ a = Analysis(
     binaries=[],
     datas=[],
     hiddenimports=[
-        "pystray._win32",       # Windows tray icon backend
-        "PIL._tkinter_finder",  # Pillow / tkinter bridge
-        "pytesseract",          # OCR (PII masking)
+        "pystray._win32",           # Windows tray icon backend
+        "PIL._tkinter_finder",      # Pillow / tkinter bridge
+        "pytesseract",              # OCR (PII masking)
+        "keyboard",                 # global hotkey support
+        "keyboard._winkeyboard",    # Windows keyboard backend
+        "keyboard._canonical_names",
+        "keyboard._keyboard_event",
     ],
     hookspath=[],
     hooksconfig={},
