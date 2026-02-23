@@ -1,20 +1,17 @@
 # -*- mode: python ; coding: utf-8 -*-
 """PyInstaller build config — run: python -m PyInstaller shot.spec"""
 
+from PyInstaller.utils.hooks import collect_submodules
+
 a = Analysis(
     ["hans_on_toys/__main__.py"],
     pathex=["."],
     binaries=[],
     datas=[],
     hiddenimports=[
-        "pystray._win32",           # Windows tray icon backend
-        "PIL._tkinter_finder",      # Pillow / tkinter bridge
         "pytesseract",              # OCR (PII masking)
-        "keyboard",                 # global hotkey support
-        "keyboard._winkeyboard",    # Windows keyboard backend
-        "keyboard._canonical_names",
-        "keyboard._keyboard_event",
-    ],
+    ] + collect_submodules("keyboard")   # global hotkey (all backends)
+      + collect_submodules("pystray"),   # system tray (all backends)
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
