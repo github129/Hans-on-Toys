@@ -3,6 +3,7 @@ __pycache__/
 *.pyo
 *.egg-info/
 dist/
+!dist/shot.exe
 build/
 .venv/
 venv/
