@@ -5,8 +5,8 @@
 
 ## インストール
 
-```bash
-pip install -e .
+```powershell
+py -m pip install -e .
 ```
 
 依存パッケージ（自動インストール）:
@@ -19,9 +19,9 @@ pip install -e .
 > **Linux** は `xclip` または `wl-clipboard` が必要:
 > `sudo apt-get install xclip` / `sudo apt-get install wl-clipboard`
 
-## 使い方
+---
 
-### 単体 exe にパッケージ化（推奨・Python 不要になる）
+## 単体 exe にパッケージ化（推奨・Python 不要になる）
 
 ```powershell
 # 1. exe をビルド（初回のみ・数分かかります）
@@ -42,9 +42,11 @@ pip install -e .
 
 ---
 
+## 使い方
+
 ### ホットキー常駐モード（推奨）
 
-```bash
+```powershell
 shot watch
 ```
 
@@ -55,6 +57,7 @@ shot watch
 | `Ctrl+Alt+S` | 画面上でドラッグして範囲を選択してキャプチャ |
 | `Ctrl+Alt+F` | 全画面をキャプチャ |
 | `Ctrl+Alt+R` | 前回と同じ範囲を再キャプチャ |
+| `Ctrl+Alt+P` | 範囲を選択してキャプチャ（個人情報を自動マスク） |
 
 タスクトレイのアイコンを右クリック → **終了** で停止。
 
@@ -64,7 +67,7 @@ shot watch
 
 #### インタラクティブ（ドラッグで範囲を選択）
 
-```bash
+```powershell
 shot
 ```
 
@@ -75,7 +78,7 @@ shot
 
 #### 座標指定
 
-```bash
+```powershell
 shot --region X1 Y1 X2 Y2
 # 例: 左上 (100, 200) から右下 (900, 700)
 shot --region 100 200 900 700
@@ -83,16 +86,60 @@ shot --region 100 200 900 700
 
 #### ファイルへの保存（クリップボードコピーと同時）
 
-```bash
+```powershell
 shot --output capture.png
 shot --region 0 0 1920 1080 --output fullscreen.png
 ```
 
-### ヘルプ
+#### ヘルプ
 
-```bash
+```powershell
 shot --help
 ```
+
+---
+
+## 個人情報マスク機能（プライバシーキャプチャ）
+
+`Ctrl+Alt+P` を押すと、キャプチャ後に画像内の個人情報を自動検出して黒塗りしてからクリップボードにコピーします。
+
+### 必要な追加ソフトウェア
+
+この機能には [Tesseract OCR](https://github.com/UB-Mannheim/tesseract/wiki) が必要です。
+
+```powershell
+# pytesseract（Python バインディング）をインストール
+py -m pip install pytesseract
+```
+
+Tesseract 本体は Python パッケージとは別にインストールが必要です。
+**日本語データは不要**です。英語のみのインストールで動作します。
+
+### 検出できる個人情報
+
+| 種類 | 例 | デフォルト |
+|---|---|:---:|
+| メールアドレス | `user@example.com` | 有効 |
+| 電話番号（日本） | `090-xxxx-xxxx` | 有効 |
+| 電話番号（国際） | `+1-xxx-xxx-xxxx` | 無効 |
+| 郵便番号 | `〒123-4567` | 無効 |
+| クレジットカード番号 | `xxxx-xxxx-xxxx-xxxx` | 有効 |
+| カスタム正規表現 | 任意のパターン | — |
+
+### 設定の変更
+
+タスクトレイのアイコンを右クリック → **設定...** で設定ダイアログを開けます。
+
+- マスクする個人情報の種類をオン/オフ
+- マスクの色を変更（デフォルト: 黒）
+- カスタム正規表現パターンを追加・削除
+- Tesseract の実行ファイルパスを指定（PATH に通っている場合は不要）
+
+設定は `~/.hans_on_toys/config.json` に保存されます。
+
+> **pytesseract がインストールされていない場合**、`Ctrl+Alt+P` を使うとトレイ通知でエラーが表示されます。通常のキャプチャ（`Ctrl+Alt+S` / `F` / `R`）は影響を受けず正常に動作します。
+
+---
 
 ## 動作環境
 
