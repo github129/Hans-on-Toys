@@ -3,25 +3,55 @@
 ハンズオン資料作成用スクリーンショットツール。
 画面の指定範囲をスクリーンショットして、クリップボードにコピーします。
 
-## インストール
+## セットアップ（ゼロから始める場合）
+
+### 1. Python のインストール
+
+[python.org](https://www.python.org/downloads/) から **Python 3.9 以上**をダウンロードしてインストールしてください。
+
+> インストール時に **「Add Python to PATH」** にチェックを入れてください。
+
+インストール確認:
 
 ```powershell
-py -m pip install -e .
+py --version
+# 例: Python 3.12.x
 ```
 
-依存パッケージ（自動インストール）:
-- [Pillow](https://pillow.readthedocs.io/) — 画像処理
-- [mss](https://python-mss.readthedocs.io/) — 高速スクリーンショット
-- [keyboard](https://github.com/boppreh/keyboard) — グローバルホットキー
-- [pystray](https://github.com/moses-palmer/pystray) — タスクトレイアイコン
+### 2. パッケージのインストール
+
+```powershell
+py -m pip install -r requirements.txt
+```
+
+これにより以下がインストールされます:
+
+| パッケージ | 用途 |
+|---|---|
+| Pillow | 画像処理 |
+| mss | 高速スクリーンショット |
+| keyboard | グローバルホットキー |
+| pystray | タスクトレイアイコン |
+| pytesseract | OCR（個人情報マスク機能用） |
 
 > **Windows** はクリップボードコピーに追加パッケージ不要（PowerShell を使用）。
 > **Linux** は `xclip` または `wl-clipboard` が必要:
 > `sudo apt-get install xclip` / `sudo apt-get install wl-clipboard`
 
+### 3. Tesseract OCR のインストール（個人情報マスク機能を使う場合のみ）
+
+[Tesseract インストーラー（Windows）](https://github.com/UB-Mannheim/tesseract/wiki) からダウンロードしてインストールしてください。
+
+> **日本語データは不要**です。英語のみのインストールで動作します。
+> インストール後、`tesseract --version` でパスが通っていることを確認してください。
+> パスが通っていない場合はタスクトレイ右クリック → **設定...** から実行ファイルのパスを指定できます。
+
 ---
 
-## 単体 exe にパッケージ化（推奨・Python 不要になる）
+## 単体 exe にパッケージ化（配布用・Python 不要になる）
+
+> **前提**: 上記セットアップ（Python + `pip install -r requirements.txt`）が完了していること。
+> PyInstaller は `build.ps1` が自動でインストールします。
 
 ```powershell
 # 1. exe をビルド（初回のみ・数分かかります）
@@ -103,17 +133,7 @@ shot --help
 
 `Ctrl+Alt+P` を押すと、キャプチャ後に画像内の個人情報を自動検出して黒塗りしてからクリップボードにコピーします。
 
-### 必要な追加ソフトウェア
-
-この機能には [Tesseract OCR](https://github.com/UB-Mannheim/tesseract/wiki) が必要です。
-
-```powershell
-# pytesseract（Python バインディング）をインストール
-py -m pip install pytesseract
-```
-
-Tesseract 本体は Python パッケージとは別にインストールが必要です。
-**日本語データは不要**です。英語のみのインストールで動作します。
+> この機能を使うには、セットアップの **手順 2・3**（`requirements.txt` のインストールと Tesseract OCR）が必要です。
 
 ### 検出できる個人情報
 
